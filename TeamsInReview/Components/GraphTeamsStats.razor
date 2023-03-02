@@ -1,0 +1,178 @@
+﻿@using System.IO
+@using Azure.Core
+@using Microsoft.Graph
+@using System.Xml;
+@inject TeamsFx teamsfx
+@inject TeamsUserCredential teamsUserCredential
+
+
+@*
+Razor component to get Teams statistics for the authenticated user using Microsoft Graph
+Will request consent if the permission is not already given on behalf of the user
+Author: crisag@microsoft.com
+*@
+
+<div>
+    <h2>Get info on user teams usage</h2>
+    @if (NeedConsent)
+    {
+        <p>Click below to authorize this app to read your Teams usage statistics using Microsoft Graph.</p>
+        <FluentButton Appearance="Appearance.Accent" Disabled="@IsLoading" @onclick="ConsentAndShow">Authorize</FluentButton>
+    }
+    @if (IsLoading)
+    {
+        <ProfileCard IsLoading="true" />
+    }
+    else if (!string.IsNullOrEmpty(@ErrorMessage))
+    {
+        <div class="error">@ErrorMessage</div>
+    }
+    else if (Profile != null)
+    {
+        <ProfileCard IsLoading="false" Profile="@Profile" UserPhotoUri="@UserPhotoUri" />
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string ErrorMessage { get; set; }
+
+    public bool IsLoading { get; set; }
+    public bool NeedConsent { get; set; }
+    public User Profile { get; set; }
+    public string UserPhotoUri { get; set; }
+
+    private readonly string _scope = "Reports.Read.All";
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsLoading = true;
+        if (await HasPermission(_scope))
+        {
+            await ShowProfile();
+        }
+    }
+
+    private async Task ShowProfile()
+    {
+        IsLoading = true;
+        var graph = GetGraphServiceClient();
+
+        Profile = await graph.Me.Request().GetAsync();
+        UserPhotoUri = await GetPhotoAsync(graph);
+
+        IsLoading = false;
+        ErrorMessage = string.Empty;
+    }
+
+    private async Task ConsentAndShow()
+    {
+        try
+        {
+            await teamsUserCredential.LoginAsync(_scope);
+            NeedConsent = false;
+            await ShowProfile();
+        }
+        catch (ExceptionWithCode e)
+        {
+            ErrorMessage = e.Message;
+        }
+    }
+
+    private async Task<bool> HasPermission(string scope)
+    {
+        IsLoading = true;
+        try
+        {
+            await teamsUserCredential.GetTokenAsync(new TokenRequestContext(new string[] { _scope }), new System.Threading.CancellationToken());
+            return true;
+        }
+        catch (ExceptionWithCode e)
+        {
+            if (e.Code == ExceptionCode.UiRequiredError)
+            {
+                NeedConsent = true;
+            }
+            else
+            {
+                ErrorMessage = e.Message;
+            }
+
+        }
+        IsLoading = false;
+        return false;
+    }
+
+    private GraphServiceClient GetGraphServiceClient()
+    {
+        var msGraphAuthProvider = new MsGraphAuthProvider(teamsUserCredential, _scope);
+        var client = new GraphServiceClient(msGraphAuthProvider);
+        return client;
+    }
+
+    private async Task<string> GetPhotoAsync(GraphServiceClient graph)
+    {
+        try
+        {
+            // returns a full report 
+            // var message = graph.Reports.GetTeamsUserActivityUserDetail("D30").Request().GetHttpRequestMessage();
+
+            //
+
+            var message = graph.Reports.GetTeamsUserActivityCounts("D180").Request().GetHttpRequestMessage();
+            var response = await graph.HttpProvider.SendAsync(message);
+            // response content should be csv
+            var content = await response.Content.ReadAsStringAsync();
+
+            // Split the CSV string into individual lines
+            string[] lines = content.Split('\n');
+
+            // Get the headers from the first line
+            string[] headers = lines[0].Split(',');
+
+            // Get the index of the columns we want to sum
+            Dictionary<string, int> columnsToSum = new Dictionary<string, int>
+            {
+                { "Team Chat Messages", Array.IndexOf(headers, "Team Chat Messages") },
+                { "Private Chat Messages", Array.IndexOf(headers, "Private Chat Messages") },
+                { "Calls", Array.IndexOf(headers, "Calls") },
+                { "Meetings", Array.IndexOf(headers, "Meetings") },
+                { "Meetings Organized Count", Array.IndexOf(headers, "Meetings Organized Count") },
+                { "Meetings Attended Count", Array.IndexOf(headers, "Meetings Attended Count") },
+                { "Post Messages", Array.IndexOf(headers, "Post Messages") },
+                { "Reply Messages", Array.IndexOf(headers, "Reply Messages") }
+            };
+
+            // Initialize the totals dictionary
+            Dictionary<string, int> totals = new Dictionary<string, int>();
+            foreach (string column in columnsToSum.Keys)
+            {
+                totals[column] = 0;
+            }
+
+            // Loop through the data lines and sum the values
+            for (int i = 1; i < lines.Length-1; i++)
+            {
+                string[] values = lines[i].Split(',');
+
+                foreach (string column in columnsToSum.Keys)
+                {
+                    if (int.TryParse(values[columnsToSum[column]], out int value))
+                    {
+                        totals[column] += value;
+                    }
+                }
+            }
+
+            // Print the totals
+            foreach (string column in columnsToSum.Keys)
+            {
+                Console.WriteLine($"{column}: {totals[column]}");
+            }
+
+        }
+        catch (Exception) { /* Unable to get the report */ }
+
+        return string.Empty;
+    }
+}

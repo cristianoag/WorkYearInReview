@@ -1,0 +1,43 @@
+{
+    "solution": {
+        "provisionSucceeded": true,
+        "teamsAppTenantId": "932109f9-aabe-4596-b44b-a90ac11eeb66",
+        "subscriptionId": "dc70ba90-3634-4e28-8291-37cea124b58b",
+        "subscriptionName": "Microsoft Azure Sponsorship 2",
+        "tenantId": "932109f9-aabe-4596-b44b-a90ac11eeb66",
+        "needCreateResourceGroup": true,
+        "resourceGroupName": "rg-TeamsInReview",
+        "location": "eastus",
+        "resourceNameSuffix": "c4bec5"
+    },
+    "fx-resource-appstudio": {
+        "tenantId": "932109f9-aabe-4596-b44b-a90ac11eeb66",
+        "teamsAppId": "b4ad6316-b424-417d-80b0-4cb8066da5e3"
+    },
+    "fx-resource-frontend-hosting": {
+        "indexPath": "/",
+        "skuName": "F1",
+        "siteName": "teamsinrev471bc6tab",
+        "domain": "teamsinrev471bc6tab.azurewebsites.net",
+        "appServicePlanName": "teamsinrev471bc6tab",
+        "resourceId": "/subscriptions/dc70ba90-3634-4e28-8291-37cea124b58b/resourceGroups/rg-TeamsInReview/providers/Microsoft.Web/sites/teamsinrev471bc6tab",
+        "siteEndpoint": "https://teamsinrev471bc6tab.azurewebsites.net",
+        "endpoint": "https://teamsinrev471bc6tab.azurewebsites.net"
+    },
+    "fx-resource-aad-app-for-teams": {
+        "clientId": "0880df32-73d9-40a3-8479-2c5b313a402d",
+        "clientSecret": "{{fx-resource-aad-app-for-teams.clientSecret}}",
+        "objectId": "3b0992d1-b41d-4478-88c5-5b3efad886cb",
+        "oauth2PermissionScopeId": "7bc6a0e0-8ac9-4851-a957-f31fc9163682",
+        "tenantId": "932109f9-aabe-4596-b44b-a90ac11eeb66",
+        "oauthHost": "https://login.microsoftonline.com",
+        "oauthAuthority": "https://login.microsoftonline.com/932109f9-aabe-4596-b44b-a90ac11eeb66",
+        "applicationIdUris": "api://teamsinrev471bc6tab.azurewebsites.net/0880df32-73d9-40a3-8479-2c5b313a402d",
+        "frontendEndpoint": "https://teamsinrev471bc6tab.azurewebsites.net"
+    },
+    "fx-resource-identity": {
+        "identityName": "teamsinrev471bc6",
+        "identityResourceId": "/subscriptions/dc70ba90-3634-4e28-8291-37cea124b58b/resourceGroups/rg-TeamsInReview/providers/Microsoft.ManagedIdentity/userAssignedIdentities/teamsinrev471bc6",
+        "identityClientId": "c855c794-d9e5-4990-b2df-58306611d294"
+    }
+}
