@@ -12,66 +12,152 @@ Will request consent if the permission is not already given on behalf of the use
 Author: crisag@microsoft.com
 *@
 
-<div>
-    <h2>Get info on user teams usage</h2>
-    @if (NeedConsent)
-    {
-        <p>Click below to authorize this app to read your Teams usage statistics using Microsoft Graph.</p>
-        <FluentButton Appearance="Appearance.Accent" Disabled="@IsLoading" @onclick="ConsentAndShow">Authorize</FluentButton>
-    }
-    @if (IsLoading)
-    {
-        <ProfileCard IsLoading="true" />
-    }
-    else if (!string.IsNullOrEmpty(@ErrorMessage))
-    {
-        <div class="error">@ErrorMessage</div>
-    }
-    else if (Profile != null)
-    {
-        <ProfileCard IsLoading="false" Profile="@Profile" UserPhotoUri="@UserPhotoUri" />
-    }
-</div>
+
+@if (IsLoading)
+{
+    <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+        <FluentProgressRing />
+    </div>
+}
+else
+{
+
+
+    <div class="slide" style="display: block;">
+        <img src="images/cards-against-humanity.jpg" />
+        <div class="text">
+            Looks like you sent enough chat messages to fill a library...<br>
+            or at least a really big emoji dictionary.<br>
+            You sent a total of @Totals["Team Chat Messages"] messages this semester!
+        </div>
+    </div>
+
+    <div class="slide">
+        <div class="video-background">
+            <video autoplay muted loop>
+                <source src="https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4" type="video/mp4">
+            </video>
+        </div>
+        <div class="text">
+            Congratulations, you've reached 007 status in Teams! <br>
+            You've sent enough private messages to make even James Bond proud. <br>
+            You sent a total of @Totals["Private Chat Messages"] private messages this past 180 days.<br>
+            Keep up the spy work!
+        </div>
+    </div>
+
+    <div class="slide">
+        <img src="images/omnivore.jpg" />
+        <div class="text">
+            You've made enough calls to give Alexander Graham Bell a run for his money.<br>
+            A total of @Totals["Calls"] calls!
+        </div>
+    </div>
+
+
+    <div class="slide">
+        <video autoplay muted loop>
+            <source src="https://freetestdata.com/wp-content/uploads/2022/02/Free_Test_Data_7MB_MP4.mp4" type="video/mp4">
+        </video>
+        <div class="text">
+            You've been racking up the meetings in Teams like a hiker on a forest trail!<br>
+            You took part on @Totals["Meetings"] meeting this semester!
+        </div>
+    </div>
+
+
+    <div>
+        <h2>DEBUG - Here is the Teams usage information summary (last 180 days) - DEBUG</h2>
+        @if (NeedConsent)
+        {
+            <p>Click below to authorize this app to read your Teams usage statistics using Microsoft Graph.</p>
+            <FluentButton Appearance="Appearance.Accent" Disabled="@IsLoading" @onclick="ConsentAndSet">Authorize</FluentButton>
+        }
+        else if (!string.IsNullOrEmpty(@ErrorMessage))
+        {
+            <div class="error">@ErrorMessage</div>
+        }
+        else if (Profile != null) 
+        {
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Area</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var pair in Totals)
+                    {
+                        <tr>
+                            <td>@pair.Key</td>
+                            <td>@pair.Value</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+        }
+    </div>
+
+
+
+}
 
 @code {
     [Parameter]
     public string ErrorMessage { get; set; }
 
+    //page variables
     public bool IsLoading { get; set; }
     public bool NeedConsent { get; set; }
     public User Profile { get; set; }
-    public string UserPhotoUri { get; set; }
+    public Dictionary<string, int> Totals { get; set; }
 
+    //scope to request permissions
     private readonly string _scope = "Reports.Read.All";
 
     protected override async Task OnInitializedAsync()
     {
+        //flag the loading state
         IsLoading = true;
+        //check for the appropriate permissions to execute the graph query
         if (await HasPermission(_scope))
         {
-            await ShowProfile();
+            //if the user has permissions, set the page variables so we can present the slideshow
+            await SetSlideShowVariables();
         }
     }
 
-    private async Task ShowProfile()
+    private async Task SetSlideShowVariables()
     {
+        //we are loading info, so set the loading flag
         IsLoading = true;
+        //gets the graph service client
         var graph = GetGraphServiceClient();
 
+        //get the user profile
         Profile = await graph.Me.Request().GetAsync();
-        UserPhotoUri = await GetPhotoAsync(graph);
+        //get the teams usage info
+        Totals = await GetTeamsInfoAsync(graph);
 
+        //end of the loading info phase
         IsLoading = false;
+        //no error message
         ErrorMessage = string.Empty;
     }
 
-    private async Task ConsentAndShow()
+    private async Task ConsentAndSet()
     {
         try
         {
+            //performs a login attempt on the scope for the report
             await teamsUserCredential.LoginAsync(_scope);
+            //if we arrive here, then we don't need the consent
             NeedConsent = false;
-            await ShowProfile();
+            //set the slide show variables as we have permissions
+            await SetSlideShowVariables();
         }
         catch (ExceptionWithCode e)
         {
@@ -81,16 +167,20 @@ Author: crisag@microsoft.com
 
     private async Task<bool> HasPermission(string scope)
     {
+        //flag the loading state while we check for permissions
         IsLoading = true;
         try
         {
+            //get the token 
             await teamsUserCredential.GetTokenAsync(new TokenRequestContext(new string[] { _scope }), new System.Threading.CancellationToken());
             return true;
         }
         catch (ExceptionWithCode e)
         {
+            //if the UiRequiredError is returned, then we need a consent to move fwd
             if (e.Code == ExceptionCode.UiRequiredError)
             {
+                //set the consent requirement variable
                 NeedConsent = true;
             }
             else
@@ -99,27 +189,28 @@ Author: crisag@microsoft.com
             }
 
         }
+        //end of the loading state
         IsLoading = false;
+        //if we reach here, then return false
         return false;
     }
 
     private GraphServiceClient GetGraphServiceClient()
     {
+        //gets the graph auth provider on the scope defined
         var msGraphAuthProvider = new MsGraphAuthProvider(teamsUserCredential, _scope);
+        //gets the graph client
         var client = new GraphServiceClient(msGraphAuthProvider);
         return client;
     }
 
-    private async Task<string> GetPhotoAsync(GraphServiceClient graph)
+    private async Task<Dictionary<string, int>> GetTeamsInfoAsync(GraphServiceClient graph)
     {
         try
         {
-            // returns a full report 
-            // var message = graph.Reports.GetTeamsUserActivityUserDetail("D30").Request().GetHttpRequestMessage();
-
-            //
-
+            //builds the http request to collect the last 180 days of Teams usage data
             var message = graph.Reports.GetTeamsUserActivityCounts("D180").Request().GetHttpRequestMessage();
+            //send the request to the graph service
             var response = await graph.HttpProvider.SendAsync(message);
             // response content should be csv
             var content = await response.Content.ReadAsStringAsync();
@@ -164,15 +255,16 @@ Author: crisag@microsoft.com
                 }
             }
 
-            // Print the totals
-            foreach (string column in columnsToSum.Keys)
-            {
-                Console.WriteLine($"{column}: {totals[column]}");
-            }
+           
+
+            return totals;
+        }
+        catch (Exception) { /* Unable to get the report */
+
+            return null;
 
         }
-        catch (Exception) { /* Unable to get the report */ }
-
-        return string.Empty;
     }
 }
+
+
