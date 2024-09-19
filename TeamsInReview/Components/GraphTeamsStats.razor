@@ -2,8 +2,10 @@
 @using Azure.Core
 @using Microsoft.Graph
 @using System.Xml;
+@using Microsoft.Extensions.Configuration;
 @inject TeamsFx teamsfx
 @inject TeamsUserCredential teamsUserCredential
+@inject IConfiguration Configuration;
 
 
 @*
@@ -25,9 +27,7 @@ else
     <div class="slide" style="display: block;">
         <img src="images/cards-against-humanity.jpg" />
         <div class="text">
-            Looks like you sent enough chat messages to fill a library...<br>
-            or at least a really big emoji dictionary.<br>
-            You sent a total of @Totals["Team Chat Messages"] messages this semester!
+            @WriteOverlayText("Write a funny message about the number of Teams chat messages that the employee " + UserName + " exchanged the past 180 days.The number of messages sent by the employee was " + Totals["Team Chat Messages"])
         </div>
     </div>
 
@@ -38,18 +38,14 @@ else
             </video>
         </div>
         <div class="text">
-            Congratulations, you've reached 007 status in Teams! <br>
-            You've sent enough private messages to make even James Bond proud. <br>
-            You sent a total of @Totals["Private Chat Messages"] private messages this past 180 days.<br>
-            Keep up the spy work!
+            @WriteOverlayText("Write a funny message about the number of Private Teams chat messages that the employee " + UserName + " exchanged the past 180 days.The number of private messages sent by the employee was " + Totals["Private Chat Messages"])
         </div>
     </div>
 
     <div class="slide">
         <img src="images/omnivore.jpg" />
         <div class="text">
-            You've made enough calls to give Alexander Graham Bell a run for his money.<br>
-            A total of @Totals["Calls"] calls!
+            @WriteOverlayText("Write a funny message about the number of Teams calls that the employee " + UserName + " made in the past 180 days.The number of Teams calls for the employee was " + Totals["Calls"])
         </div>
     </div>
 
@@ -59,8 +55,7 @@ else
             <source src="https://freetestdata.com/wp-content/uploads/2022/02/Free_Test_Data_7MB_MP4.mp4" type="video/mp4">
         </video>
         <div class="text">
-            You've been racking up the meetings in Teams like a hiker on a forest trail!<br>
-            You took part on @Totals["Meetings"] meeting this semester!
+            @WriteOverlayText("Write a funny message about the number of meetings that the employee " + UserName + " participated in the past 180 days.The number of Teams meetings with the employee was " + Totals["Meetings"])
         </div>
     </div>
 
@@ -107,6 +102,8 @@ else
 @code {
     [Parameter]
     public string ErrorMessage { get; set; }
+    [Parameter]
+    public string UserName { get; set; }
 
     //page variables
     public bool IsLoading { get; set; }
@@ -194,6 +191,21 @@ else
         return false;
     }
 
+    private string WriteOverlayText(string aiPrompt)
+    {
+        TeamsInReview.Services.AI AI = new TeamsInReview.Services.AI(
+            Configuration["AZURE_OPENAI_ENDPOINT"], 
+            Configuration["AZURE_OPENAI_API_KEY"],
+            Configuration["AZURE_OPENAI_DEPLOYMENT_NAME"]
+        );
+        //TeamsInReview.Services.AI AI test = new AI();
+       // TeamsInReview.Services.AI AI = new TeamsInReview.Services.AI();
+       //TeamsInReview.Services.AI AI = new TeamsInReview.Services.AI();
+
+       return AI.GetOverlayText(aiPrompt);
+       // return "Test";
+    }
+
     private GraphServiceClient GetGraphServiceClient()
     {
         //gets the graph auth provider on the scope defined
@@ -264,6 +276,8 @@ else
 
         }
     }
+
+
 }
 
 
