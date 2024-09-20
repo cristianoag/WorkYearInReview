@@ -4,6 +4,8 @@ using Azure;
 using Azure.AI.OpenAI;
 using Microsoft.Graph;
 using OpenAI.Chat;
+using OpenAI.Images;
+using System.ClientModel;
 using System.Runtime.CompilerServices;
 
 public class AI
@@ -20,6 +22,21 @@ public class AI
 
     }
 
+    public string GetBackgroundImage(string aiPrompt)
+    {
+        ImageClient imgClient = _openAIClient.GetImageClient("Dalle3");
+
+        var imgResult = imgClient.GenerateImage(
+            aiPrompt,
+            new ImageGenerationOptions()
+            {
+                Quality = GeneratedImageQuality.Standard,
+                Size = GeneratedImageSize.W1792xH1024,
+                ResponseFormat = GeneratedImageFormat.Uri
+            });
+            
+        return imgResult.Value.ImageUri.ToString();
+    }
     public string GetOverlayText(string aiPrompt)
     {
 

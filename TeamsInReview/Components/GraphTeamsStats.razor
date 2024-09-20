@@ -23,9 +23,10 @@ Author: crisag@microsoft.com
 }
 else
 {
-    <div class="slide" style="display: block;">
-        <img src="images/cards-against-humanity.jpg" />
-        <div class="text">
+    <div class="slide" style="display: block; ">
+        <!-- <img src="images/cards-against-humanity.jpg" /> -->
+        <img src="@WriteBackgroundImage("Create a background image to be used to present a funny message about the number of messages exchanged on Microsoft Teams by an employee")" />
+        <div class="text" style="background-color: rgba(0, 0, 0, 0.5);">
             @WriteOverlayText("Write a funny message about the number of Teams chat messages that the employee " + UserName + " exchanged the past 180 days.The number of messages sent by the employee was " + Totals["Team Chat Messages"])
             <div style="float: right;"><img src="images/8517-share-on-linkedin-button.png" style="width: 60px; height: 60px; display: block; margin-top: 10px;"></div>
         </div>
@@ -39,7 +40,7 @@ else
             <div style="float: right;"><img src="images/8517-share-on-linkedin-button.png" style="width: 60px; height: 60px; display: block; margin-top: 10px;"></div>
 
         </div>
-        <div class="text">
+        <div class="text" style="background-color: rgba(0, 0, 0, 0.5);">
             @WriteOverlayText("Write a funny message about the number of Private Teams chat messages that the employee " + UserName + " exchanged the past 180 days.The number of private messages sent by the employee was " + Totals["Private Chat Messages"])
             <div style="float: right;"><img src="images/8517-share-on-linkedin-button.png" style="width: 60px; height: 60px; display: block; margin-top: 10px;"></div>
 
@@ -47,8 +48,9 @@ else
     </div>
 
     <div class="slide">
-        <img src="images/omnivore.jpg" />
-        <div class="text">
+        <!-- <img src="images/omnivore.jpg" /> -->
+        <img src="@WriteBackgroundImage("Create a background image to be used to present a funny message about the number of calls made using Microsoft Teams by an employee")" />
+        <div class="text" style="background-color: rgba(0, 0, 0, 0.5);">
             @WriteOverlayText("Write a funny message about the number of Teams calls that the employee " + UserName + " made in the past 180 days.The number of Teams calls for the employee was " + Totals["Calls"])
             <div style="float: right;"><img src="images/8517-share-on-linkedin-button.png" style="width: 60px; height: 60px; display: block; margin-top: 10px;"></div>
 
@@ -60,7 +62,7 @@ else
         <video autoplay muted loop>
             <source src="https://freetestdata.com/wp-content/uploads/2022/02/Free_Test_Data_7MB_MP4.mp4" type="video/mp4">
         </video>
-        <div class="text">
+        <div class="text" style="background-color: rgba(0, 0, 0, 0.5);">
             @WriteOverlayText("Write a funny message about the number of meetings that the employee " + UserName + " participated in the past 180 days.The number of Teams meetings with the employee was " + Totals["Meetings"])
             <div style="float: right;"><img src="images/8517-share-on-linkedin-button.png" style="width: 60px; height: 60px; display: block; margin-top: 10px;"></div>
 
@@ -197,6 +199,16 @@ else
         IsLoading = false;
         //if we reach here, then return false
         return false;
+    }
+
+    private string WriteBackgroundImage(string aiPrompt)
+    {
+        TeamsInReview.Services.AI AI = new TeamsInReview.Services.AI(
+            Configuration["AZURE_OPENAI_ENDPOINT"],
+            Configuration["AZURE_OPENAI_API_KEY"],
+            Configuration["AZURE_OPENAI_DEPLOYMENT_NAME"]
+        );
+        return AI.GetBackgroundImage(aiPrompt);
     }
 
     private string WriteOverlayText(string aiPrompt)
